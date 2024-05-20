@@ -1,5 +1,5 @@
 # Roblox Starter Typescript
-Use this repo to get started with Roblox typescript *instantly*.
+Use this repo to get started with Roblox typescript *blazingly fast*.
 
 ## Setup
 1. Run `npm install`
