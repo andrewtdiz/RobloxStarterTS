@@ -1,0 +1,89 @@
+{
+    "Local Player": {
+        "prefix": ["LocalPlayer"],
+        "description": "Create a reference to the local player",
+        "body": [
+            "const LocalPlayer = game.GetService(\"Players\").LocalPlayer;",
+        ]
+    },
+    "Local Character": {
+        "prefix": ["LocalCharacter"],
+        "description": "Local player Character (not nil!)",
+        "body": [
+            "const character = LocalPlayer.Character!;",
+        ]
+    },
+    "Character": {
+        "prefix": ["Character"],
+        "description": "Local player Character (not nil!)",
+        "body": [
+            "const character = player.Character ?? player.CharacterAdded.Wait()[0];",
+        ]
+    },
+    "Humanoid": {
+        "prefix": ["Humanoid"],
+        "description": "Local player Humanoid (yields!)",
+        "body": [
+            "const humanoid = character.WaitForChild(\"Humanoid\") as Humanoid;",
+        ]
+    },
+    "HumanoidRootPart": {
+        "prefix": ["Root"],
+        "description": "Local player Character (yields!)",
+        "body": [
+            "const Root = character.WaitForChild(\"HumanoidRootPart\") as BasePart;",
+        ]
+    },
+
+    "Namespace": {
+        "prefix": "Namespace",
+        "body": [
+          "export namespace $TM_FILENAME_BASE {",
+            "\t$1",
+          "}"
+        ],
+        "description": "Roblox namespace"
+    },
+
+    "Synchronous Humanoid": {
+        "prefix": ["SyncHumanoid"],
+        "description": "Get Player Humanoid synchronously",
+        "body": [
+            "const character = player.Character;",
+            "if (!character) return;",
+            "const humanoid = character.FindFirstChild(\"Humanoid\") as Humanoid | undefined",
+            "if (!humanoid) return;",
+        ]
+    },
+
+    "Collection Service Tag": {
+        "prefix": ["TAG"],
+        "description": "Create a collection service component",
+        "body": [
+            "import { CollectionService } from \"@rbxts/services\";",
+            "",
+            "const TAG = \"$1\";",
+            "",
+            "function setupTag(taggedPart: Instance) {",
+            "   $2",
+            "}",
+            "",
+            "for (const taggedPart of CollectionService.GetTagged(TAG)) {",
+           "\tsetupTag(taggedPart);",
+            "}",
+            "",
+            " CollectionService.GetInstanceAddedSignal(TAG).Connect(setupTag);"
+        ]
+    },
+
+    "Synchronous Root": {
+        "prefix": ["SyncRoot"],
+        "description": "Get Player Root synchronously",
+        "body": [
+            "const character = player.Character;",
+            "if (!character) return;",
+            "const Root = character.FindFirstChild(\"HumanoidRootPart\") as BasePart | undefined;",
+            "if (!Root) return;",
+        ]
+    },
+}
