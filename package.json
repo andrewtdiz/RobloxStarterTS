@@ -26,6 +26,7 @@
   "dependencies": {
     "@rbxts/fusion": "^0.2.0",
     "@rbxts/make": "^1.0.6",
+    "@rbxts/net": "^3.0.9",
     "@rbxts/services": "^1.5.4"
   }
 }
