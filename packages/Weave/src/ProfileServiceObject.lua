@@ -78,8 +78,6 @@ function ProfileServiceObject:_PlayerRemoving(player: Player)
 	self._playerObject:set(fusionValue)
 end
 
-
-
 function ProfileServiceObject<T>(valueName: string, profileServiceKey: string?)
 	
 	if RunService:IsClient() then

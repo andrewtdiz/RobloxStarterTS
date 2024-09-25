@@ -2,13 +2,12 @@ import { Value } from "@rbxts/fusion";
 
 interface Weave {
 	WeaveValue: <T>(eventName: string) => Value<T>;
-	WeaveList: <T>(eventName: string) => Value<T>;
 	WeavePlayerValue: <T>(eventName: string) => Value<T>;
-	ProfileServiceValue: <T>(Weave: Weave, valueName: string) => Value<T>;
-	ProfileServerValue: <T>(Weave: Weave, valueName: string) => Value<T>;
-	ProfileServiceObject: <T>(Weave: Weave, valueName: string) => Value<T>;
-	ProfileZapValue: <T>(Weave: Weave, valueName: string) => Value<T>;
-	ZapPlayerValue: <T>(Weave: Weave, valueName: string) => Value<T>;
+	ProfileServiceValue: <T>(valueName: string) => Value<T>;
+	ProfileServerValue: <T>(valueName: string) => Value<T>;
+	ProfileServiceObject: <T>(valueName: string) => Value<T>;
+	ProfileZapValue: <T>(valueName: string) => Value<T>;
+	ZapPlayerValue: <T>(valueName: string) => Value<T>;
 	RemoteEvent(name: string): RemoteEvent;
 	RemoteFunction(name: string): RemoteFunction;
 	UnreliableRemoteEvent(name: string): UnreliableRemoteEvent;

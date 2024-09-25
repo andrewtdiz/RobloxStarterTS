@@ -20,7 +20,6 @@ type WeavePlayerValue<T> = PlayerStateObject<T>;
 
 interface Weave {
 	WeaveValue: <T>(eventName: string, initialValue: T) => WeaveValue<T>;
-	WeaveList: <T>(eventName: string) => WeaveValue<T>;
 	WeavePlayerValue: <T>(eventName: string, initialValue: T) => WeavePlayerValue<T>;
 	ProfileServiceValue: <T>(
 		Weave: Weave,

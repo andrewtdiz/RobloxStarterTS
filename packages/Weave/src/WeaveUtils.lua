@@ -1,4 +1,6 @@
-local WeaveUtils = {}
+local WeaveUtils = {
+	values = {},
+}
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
@@ -41,21 +43,32 @@ function WeaveUtils.TableType(someObject)
 	end
 end
 
+function WeaveUtils.MethodExists(obj, methodName)
+	return type(obj[methodName]) == "function"
+end
+
+function WeaveUtils.KeyExists(obj, keyName)
+	return obj[keyName] ~= nil
+end
+
+local typesDictionary = {
+	["number"] = "NumberValue",
+	["string"] = "StringValue",
+	["boolean"] = "BoolValue",
+	["Vector3"] = "Vector3Value",
+	["Instance"] = "ObjectValue",
+}
+local supportedTypes = {}
+for _, value in typesDictionary do
+	supportedTypes[value] = true
+end
+
 function WeaveUtils.IsCorrectInstanceType(initialValue: any, instance: Instance)
 	local valueType = typeof(initialValue)
 	if valueType == "table" and instance.ClassName == "Folder" then
 		return WeaveUtils.TableType(initialValue) == instance:GetAttribute("Type")
 	end
-	if valueType == "number" and instance.ClassName == "IntValue" then
-		return true
-	end
-	if valueType == "string" and instance.ClassName == "StringValue" then
-		return true
-	end
-	if valueType == "boolean" and instance.ClassName == "BoolValue" then
-		return true
-	end
-	return false
+	return typesDictionary[valueType] == instance.ClassName
 end
 
 function WeaveUtils.IsAPlayer(value: any)
@@ -80,13 +93,12 @@ function WeaveUtils.GetNewInstance(key: any, initialValue: any)
 			newValueInstance.Parent = newInstance
 		end
 		return newInstance
-	elseif valueType == "string" then
-		newInstance = Instance.new("StringValue")
-	elseif valueType == "boolean" then
-		newInstance = Instance.new("BoolValue")
-	elseif valueType == "number" then
-		newInstance = Instance.new("IntValue")
+	elseif typesDictionary[valueType] then
+		newInstance = Instance.new(typesDictionary[valueType])
+	else
+		error(`Invalid instance type for {initialValue}: {valueType}`)
 	end
+
 	if WeaveUtils.IsAPlayer(key) then
 		newInstance:SetAttribute("isPlayerKey", true)
 		newInstance.Name = `{key.UserId}`
@@ -98,9 +110,12 @@ function WeaveUtils.GetNewInstance(key: any, initialValue: any)
 	return newInstance
 end
 
+function WeaveUtils.IsSupportedBaseInstanceType(instance: Instance)
+	return supportedTypes[instance.ClassName]
+end
+
 function WeaveUtils.GetValueFromInstance(instance: Instance)
-	if instance == nil then return nil end
-	if instance:IsA("StringValue") or instance:IsA("BoolValue") or instance:IsA("IntValue") then
+	if WeaveUtils.IsSupportedBaseInstanceType(instance) then
 		return instance.Value
 	end
 
@@ -109,18 +124,17 @@ function WeaveUtils.GetValueFromInstance(instance: Instance)
 		local outTable
 		if tableType == "List" then
 			outTable = {}
-			for _, __ in instance:GetChildren() do
+			for _, __ in ipairs(instance:GetChildren()) do
 				table.insert(outTable, {})
 			end
-			for _, child in instance:GetChildren() do
+			for _, child in ipairs(instance:GetChildren()) do
 				local keyName = tonumber(child.Name)
 				outTable[keyName] = WeaveUtils.GetValueFromInstance(child)
 			end
 		elseif tableType == "Object" then
 			outTable = {}
-			for _, child in instance:GetChildren() do
+			for _, child in ipairs(instance:GetChildren()) do
 				local newKey = WeaveUtils.GetKeyNameFromInstance(child)
-				if newKey == nil then continue end
 				outTable[newKey] = WeaveUtils.GetValueFromInstance(child)
 			end
 		else
