@@ -16,6 +16,11 @@
 		"strict": true,
 		"target": "ESNext",
 		"typeRoots": ["node_modules/@rbxts"],
+		
+		"paths": {
+			"@rbxts/weave/server": ["@rbxts/weave/src"],
+			"@rbxts/weave/client": ["@rbxts/weave/src"],
+		},
 
 		// configurable
 		"rootDir": "src",
