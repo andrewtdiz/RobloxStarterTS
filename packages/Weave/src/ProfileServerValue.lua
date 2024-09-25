@@ -1,12 +1,12 @@
-local ProfileServerValue = {
-}
+local ProfileServerValue = {}
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 
-local CLASS_METATABLE = {__index = ProfileServerValue}
-local WEAK_KEYS_METATABLE = {__mode = "k"}
+local CLASS_METATABLE = { __index = ProfileServerValue }
+local WEAK_KEYS_METATABLE = { __mode = "k" }
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
-local Fusion = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "fusion", "src")
+local Fusion =
+	TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "fusion", "src")
 local WeaveUtils = require(script.Parent.WeaveUtils)
 
 local Value = Fusion.Value
@@ -53,7 +53,6 @@ function ProfileServerValue:setFor(player: Player, newValue: any, force: boolean
 	end)
 end
 
-
 function ProfileServerValue:updateFor(player: Player, cb: (a: any) -> any, force: boolean?)
 	if RunService:IsClient() then
 		error("Cannot set ProfileServerValue value on the client. Only the Server")
@@ -61,7 +60,7 @@ function ProfileServerValue:updateFor(player: Player, cb: (a: any) -> any, force
 	end
 	local fusionValue = self._fusionValue:get()
 	cb(fusionValue[player])
-	
+
 	local updatedValue = fusionValue[player]
 	fusionValue[player] = updatedValue
 	self._fusionValue:set(fusionValue, force)
@@ -80,7 +79,9 @@ function ProfileServerValue:isLoaded(player)
 end
 
 function ProfileServerValue:_PlayerAdded(player: Player)
-	if not RunService:IsServer() then return end
+	if not RunService:IsServer() then
+		return
+	end
 	self._isLoaded[player] = false
 	local storedValue = self._dataHandler:GetAsync(player, self._profileServiceKey)
 	self._isLoaded[player] = true
@@ -110,17 +111,16 @@ local function GetPlayerDataHandler()
 end
 
 function ProfileServerValue<T>(valueName: string, profileServiceKey: string)
-	
 	if RunService:IsClient() then
 		error(`Cannot use Profile Server Value on the Client`)
-		return 
+		return
 	end
-	
-	if profileServiceKey == nil then 
+
+	if profileServiceKey == nil then
 		error(`Must provide profileServiceKey string to ProfileServerValue on the server for {valueName}`)
 		return
 	end
-	
+
 	local DataHandler = require(GetPlayerDataHandler())
 	if not WeaveUtils.MethodExists(DataHandler, "GetProfileTemplate") then
 		error([[GetProfileTemplate method not found in DataHandler.
@@ -132,20 +132,26 @@ function ProfileServerValue<T>(valueName: string, profileServiceKey: string)
 		return
 	end
 	if not WeaveUtils.MethodExists(DataHandler, "Set") then
-		error(`Set method not found in DataHandler. Ensure the PlayerDataHandler Module script implements the Set method`)
-		return	
+		error(
+			`Set method not found in DataHandler. Ensure the PlayerDataHandler Module script implements the Set method`
+		)
+		return
 	end
 	if not WeaveUtils.MethodExists(DataHandler, "GetAsync") then
-		error(`GetAsync method not found in DataHandler. Ensure the PlayerDataHandler Module script implements the GetAsync method`)
-		return	
+		error(
+			`GetAsync method not found in DataHandler. Ensure the PlayerDataHandler Module script implements the GetAsync method`
+		)
+		return
 	end
 
 	local initialValue = DataHandler:GetProfileTemplate()[profileServiceKey]
 	if initialValue == nil then
-		error(`Profile template object must have {profileServiceKey}. Did you add the key {profileServiceKey} to the ProfileService Profile?`)
+		error(
+			`Profile template object must have {profileServiceKey}. Did you add the key {profileServiceKey} to the ProfileService Profile?`
+		)
 		return
 	end
-	
+
 	local self = setmetatable({
 		type = "State",
 		kind = "Value",
@@ -156,13 +162,13 @@ function ProfileServerValue<T>(valueName: string, profileServiceKey: string)
 		_dataHandler = DataHandler,
 		_name = valueName,
 		_isLoaded = {},
-		_value = {},
-		_fusionValue = Value({}),
-		_troves = {}
+		_value = initialValue,
+		_fusionValue = Value(initialValue),
+		_troves = {},
 	}, CLASS_METATABLE)
-	
+
 	if RunService:IsServer() then
-		for _, player in Players:GetPlayers() do 
+		for _, player in Players:GetPlayers() do
 			self:_PlayerAdded(player)
 		end
 		Players.PlayerAdded:Connect(function(player)
@@ -175,6 +181,5 @@ function ProfileServerValue<T>(valueName: string, profileServiceKey: string)
 
 	return self
 end
-
 
 return ProfileServerValue

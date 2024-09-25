@@ -50,7 +50,7 @@ function WeaveUtils.IsCorrectInstanceType(initialValue: any, instance: Instance)
 	if valueType == "table" and instance.ClassName == "Folder" then
 		return WeaveUtils.TableType(initialValue) == instance:GetAttribute("Type")
 	end
-	if valueType == "number" and instance.ClassName == "IntValue" then
+	if valueType == "number" and instance.ClassName == "NumberValue" then
 		return true
 	end
 	if valueType == "string" and instance.ClassName == "StringValue" then
@@ -89,7 +89,7 @@ function WeaveUtils.GetNewInstance(key: any, initialValue: any)
 	elseif valueType == "boolean" then
 		newInstance = Instance.new("BoolValue")
 	elseif valueType == "number" then
-		newInstance = Instance.new("IntValue")
+		newInstance = Instance.new("NumberValue")
 	end
 	if WeaveUtils.IsAPlayer(key) then
 		newInstance:SetAttribute("isPlayerKey", true)
@@ -104,7 +104,7 @@ end
 
 function WeaveUtils.GetValueFromInstance(instance: Instance)
 
-	if instance:IsA("StringValue") or instance:IsA("BoolValue") or instance:IsA("IntValue") then
+	if instance:IsA("StringValue") or instance:IsA("BoolValue") or instance:IsA("NumberValue") then
 		return instance.Value
 	end
 

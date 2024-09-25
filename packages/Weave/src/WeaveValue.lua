@@ -7,8 +7,15 @@ local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_incl
 local Fusion =
 	TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "fusion", "src")
 local WeaveUtils = require(script.Parent.WeaveUtils)
-local Trove =
-	TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "trove", "out")
+local Trove = TS.import(
+	script,
+	game:GetService("ReplicatedStorage"),
+	"rbxts_include",
+	"node_modules",
+	"@rbxts",
+	"trove",
+	"out"
+).Trove
 
 local Value = Fusion.Value
 
@@ -88,21 +95,21 @@ function WeaveValue:UpdateGameWorkspace(parentInstance: Instance, valueObject)
 	end
 
 	if next(valueObject) == nil then
-		for _, valueInstance in ipairs(parentInstance:GetChildren()) do
-			valueInstance:destroy()
+		for _, valueInstance in parentInstance:GetChildren() do
+			valueInstance:Destroy()
 		end
 	else
-		for _, valueInstance in ipairs(parentInstance:GetChildren()) do
+		for _, valueInstance in parentInstance:GetChildren() do
 			local tableType = WeaveUtils.TableType(valueObject)
 			if tableType == "List" then
 				local index = tonumber(valueInstance.Name)
 				if index > #valueObject then
-					valueInstance:destroy()
+					valueInstance:Destroy()
 				end
 			elseif tableType == "Object" then
 				local key = WeaveUtils.GetKeyNameFromInstance(valueInstance)
 				if valueObject[key] == nil then
-					valueInstance:destroy()
+					valueInstance:Destroy()
 				end
 			end
 		end
@@ -122,35 +129,32 @@ function WeaveValue:_AttachListenersToInstance(instance: Instance)
 		return
 	end
 
-	if instance:IsA("StringValue") or instance:IsA("BoolValue") or instance:IsA("IntValue") then
+	if instance:IsA("StringValue") or instance:IsA("BoolValue") or instance:IsA("NumberValue") then
 		self._troves[instance] = Trove.new()
-		self._troves[instance]:AttachToInstance(instance)
-		local newConnection = instance:GetPropertyChangedSignal("Value"):Connect(function()
+		self._troves[instance]:attachToInstance(instance)
+		self._troves[instance]:connect(instance:GetPropertyChangedSignal("Value"), function()
 			self:_Reload()
 		end)
-		self._troves[instance]:Add(newConnection)
 		return
 	end
 
 	if self._troves[instance] == nil then
 		self._troves[instance] = Trove.new()
 	end
-	for _, valueInstance in ipairs(instance:GetChildren()) do
+	for _, valueInstance in instance:GetChildren() do
 		self:_AttachListenersToInstance(valueInstance)
 	end
-	local childAddedConnection = instance.ChildAdded:Connect(function(child)
+	self._troves[instance]:connect(instance.ChildAdded, function(child)
 		self:_Reload()
 		self:_AttachListenersToInstance(child)
 	end)
-	self._troves[instance]:Add(childAddedConnection)
-	local childRemovedConnection = instance.ChildRemoved:Connect(function(child)
+	self._troves[instance]:connect(instance.ChildRemoved, function(child)
 		if self._troves[child] ~= nil then
 			self._troves[child]:Destroy()
 			self._troves[child] = nil
 		end
 		self:_Reload()
 	end)
-	self._troves[instance]:Add(childRemovedConnection)
 	return nil
 end
 

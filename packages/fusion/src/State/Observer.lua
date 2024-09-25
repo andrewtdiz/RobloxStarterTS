@@ -12,10 +12,10 @@ local PubTypes = require(Package.PubTypes)
 local Types = require(Package.Types)
 local initDependency = require(Package.Dependencies.initDependency)
 
-type Set<T> = {[T]: any}
+type Set<T> = { [T]: any }
 
 local class = {}
-local CLASS_METATABLE = {__index = class}
+local CLASS_METATABLE = { __index = class }
 
 -- Table used to hold Observer objects in memory.
 local strongRefs: Set<Types.Observer> = {}
@@ -38,11 +38,19 @@ end
 	As long as there is at least one active change listener, this Observer
 	will be held in memory, preventing GC, so disconnecting is important.
 ]]
-function class:onChange(callback: () -> ()): () -> ()
+function class:onChange(callback: () -> (), dontRunOnMount: boolean?): () -> ()
 	local uniqueIdentifier = {}
 
 	self._numChangeListeners += 1
-	self._changeListeners[uniqueIdentifier] = callback
+	self._changeListeners[uniqueIdentifier] = function()
+		callback(self.watchedState:get())
+	end
+	if not dontRunOnMount then
+		task.spawn(function()
+			task.wait()
+			callback(self.watchedState:get())
+		end)
+	end
 
 	-- disallow gc (this is important to make sure changes are received)
 	strongRefs[self] = true
@@ -67,7 +75,8 @@ local function Observer(watchedState: PubTypes.Value<any>): Types.Observer
 	local self = setmetatable({
 		type = "State",
 		kind = "Observer",
-		dependencySet = {[watchedState] = true},
+		dependencySet = { [watchedState] = true },
+		watchedState = watchedState,
 		dependentSet = {},
 		_changeListeners = {},
 		_numChangeListeners = 0,
