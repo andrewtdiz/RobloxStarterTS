@@ -3,23 +3,28 @@ const windows = std.os.windows;
 const HWND = windows.HWND;
 const BOOL = windows.BOOL;
 
-const SW_RESTORE = 9;
+const LPARAM = u64;
+
+var resolved: LPARAM = 0;
+var start_time: i128 = 0;
 
 const SW_SHOWMAXIMIZED = 3;
 const INPUT_KEYBOARD = 1;
-const INPUT_MOUSE = 0; // Added
-const KEYEVENTF_KEYUP = 0x0002;
-const MOUSEEVENTF_LEFTDOWN = 0x0002; // Added
-const MOUSEEVENTF_LEFTUP = 0x0004; // Added
 
-const KEY_W = 0x57; // Virtual key code for 'W'
-const KEY_T = 0x54; // Virtual key code for 'T'
-const KEY_CONTROL = 0x11; // Virtual key code for 'Ctrl'
+const KEYEVENTF_KEYUP = 0x0002;
 const KEY_F5 = 0x74; // Virtual key code for 'F5'
+
+const WNDENUMPROC = *const fn (hWnd: ?HWND, lParam: LPARAM) BOOL;
 
 extern "user32" fn FindWindowA(lpClassName: ?[*:0]const u8, lpWindowName: [*:0]const u8) ?HWND;
 extern "user32" fn SetForegroundWindow(hWnd: ?HWND) BOOL;
 extern "user32" fn ShowWindow(hWnd: ?HWND, nCmdShow: c_int) BOOL;
+extern "user32" fn EnumWindows(
+    lpEnumFunc: ?WNDENUMPROC,
+    lParam: LPARAM,
+) BOOL;
+extern "user32" fn IsWindowVisible(hWnd: ?HWND) BOOL;
+extern "user32" fn GetWindowTextA(hWnd: ?HWND, lpString: [*:0]u8, nMaxCount: c_int) c_int;
 
 const INPUT = extern struct {
     type: u32,
@@ -27,14 +32,6 @@ const INPUT = extern struct {
         ki: KEYBDINPUT,
         mi: MOUSEINPUT,
     },
-};
-
-const KEYBDINPUT = extern struct {
-    wVk: u16,
-    wScan: u16,
-    dwFlags: u32,
-    time: u32,
-    dwExtraInfo: usize,
 };
 
 const MOUSEINPUT = extern struct {
@@ -46,139 +43,78 @@ const MOUSEINPUT = extern struct {
     dwExtraInfo: usize,
 };
 
+const KEYBDINPUT = extern struct {
+    wVk: u16,
+    wScan: u16,
+    dwFlags: u32,
+    time: u32,
+    dwExtraInfo: usize,
+};
+
 extern "user32" fn SendInput(nInputs: u32, pInputs: [*]const INPUT, cbSize: c_int) u32;
 
-fn send_key_press(key: u16) void {
-    var inputs: [2]INPUT = undefined;
-
-    // Key down event
-    inputs[0] = INPUT{
-        .type = INPUT_KEYBOARD,
-        .u = .{
-            .ki = KEYBDINPUT{
-                .wVk = key,
-                .wScan = 0,
-                .dwFlags = 0,
-                .time = 3,
-                .dwExtraInfo = 0,
-            },
-        },
-    };
-
-    // Key up event
-    inputs[1] = INPUT{
-        .type = INPUT_KEYBOARD,
-        .u = .{
-            .ki = KEYBDINPUT{
-                .wVk = key,
-                .wScan = 0,
-                .dwFlags = KEYEVENTF_KEYUP,
-                .time = 0,
-                .dwExtraInfo = 0,
-            },
-        },
-    };
-
-    // Send the input
-    _ = SendInput(@intCast(inputs.len), &inputs, @sizeOf(INPUT));
-}
-
-fn find_window_by_title(window_title: []const u8) ?HWND {
-    const c_window_title = @as([*:0]const u8, @ptrCast(window_title));
-    return FindWindowA(null, c_window_title);
-}
-
-fn switch_to_window(window_title: []const u8) void {
-    const hwnd = find_window_by_title(window_title);
-    if (hwnd) |h| {
-        _ = SetForegroundWindow(h);
-        _ = ShowWindow(h, 8);
-        _ = ShowWindow(h, SW_SHOWMAXIMIZED);
-    } else {
-        std.debug.print("Window not found: {s}\n", .{window_title});
-    }
-}
-
-fn send_mouse_click() void {
-    var inputs: [2]INPUT = undefined;
-
-    // Mouse button down event
-    inputs[0] = INPUT{
-        .type = INPUT_MOUSE, // Changed from KEYEVENTF_KEYUP to INPUT_MOUSE
-        .u = .{
-            .mi = MOUSEINPUT{
-                .dx = 0,
-                .dy = 0,
-                .mouseData = 0,
-                .dwFlags = MOUSEEVENTF_LEFTDOWN,
-                .time = 0,
-                .dwExtraInfo = 0,
-            },
-        },
-    };
-
-    // Mouse button up event
-    inputs[1] = INPUT{
-        .type = INPUT_MOUSE, // Changed from KEYEVENTF_KEYUP to INPUT_MOUSE
-        .u = .{
-            .mi = MOUSEINPUT{
-                .dx = 0,
-                .dy = 0,
-                .mouseData = 0,
-                .dwFlags = MOUSEEVENTF_LEFTUP,
-                .time = 0,
-                .dwExtraInfo = 0,
-            },
-        },
-    };
-
-    // Send the input
-    _ = SendInput(@intCast(inputs.len), &inputs, @sizeOf(INPUT));
-}
-
-fn send_key_combination(keys: []const u16) void {
-    var inputs = std.ArrayList(INPUT).init(std.heap.page_allocator);
-    defer inputs.deinit();
-
-    // Key down events
-    for (keys) |key| {
-        inputs.append(INPUT{
+fn send_key_press() void {
+    const inputs: [2]INPUT = [_]INPUT{
+        .{
             .type = INPUT_KEYBOARD,
             .u = .{
                 .ki = KEYBDINPUT{
-                    .wVk = key,
+                    .wVk = KEY_F5,
                     .wScan = 0,
                     .dwFlags = 0,
-                    .time = 0,
+                    .time = 3,
                     .dwExtraInfo = 0,
                 },
             },
-        }) catch unreachable;
-    }
-
-    // Key up events
-    for (keys) |key| {
-        inputs.append(INPUT{
+        },
+        .{
             .type = INPUT_KEYBOARD,
             .u = .{
                 .ki = KEYBDINPUT{
-                    .wVk = key,
+                    .wVk = KEY_F5,
                     .wScan = 0,
                     .dwFlags = KEYEVENTF_KEYUP,
                     .time = 0,
                     .dwExtraInfo = 0,
                 },
             },
-        }) catch unreachable;
-    }
+        },
+    };
 
     // Send the input
-    _ = SendInput(@intCast(inputs.items.len), inputs.items.ptr, @sizeOf(INPUT));
+    _ = SendInput(@intCast(inputs.len), &inputs, @sizeOf(INPUT));
+}
+
+fn enumWindowsProc(hWnd: ?HWND, _: u64) c_int {
+    var title: [256:0]u8 = undefined;
+
+    // Get the window title
+    const length = GetWindowTextA(hWnd, &title, @intCast(title.len));
+
+    const hasRobloxStudioTitle = std.mem.indexOf(u8, &title, "- Roblox Studio") != null;
+
+    if (length > 0 and hasRobloxStudioTitle and IsWindowVisible(hWnd) == 1 and resolved == 0) {
+        resolved = 1;
+
+        const title_slice = title[0..@intCast(length)];
+        std.debug.print("Opening Roblox Window: {s}\n", .{title_slice});
+
+        _ = SetForegroundWindow(hWnd);
+
+        _ = ShowWindow(hWnd, SW_SHOWMAXIMIZED);
+
+        send_key_press();
+
+        const end_time = std.time.nanoTimestamp();
+        const duration_ms = (end_time - start_time);
+        std.debug.print("Duration: {} nanoseconds\n", .{duration_ms});
+    }
+
+    return 1; // Continue enumeration
 }
 
 pub fn main() void {
-    const window_title = "Place1 - Roblox Studio";
-    switch_to_window(window_title);
-    send_mouse_click();
-    send_key_press(KEY_F5);
+    start_time = std.time.nanoTimestamp();
+    const lpEnumFunc: WNDENUMPROC = enumWindowsProc;
+    _ = EnumWindows(lpEnumFunc, resolved);
 }
