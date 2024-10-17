@@ -1,8 +1,8 @@
 local RunService = game:GetService("RunService")
 
 local Weave = {
-	WeaveValue = require(script.WeaveValue),
-	WeavePlayerValue = require(script.WeavePlayerValue),
+	Value = require(script.Value),
+	PlayerValue = require(script.PlayerValue),
 	ZapPlayerValue = require(script.ZapPlayerValue),
 	ProfileZapValue = require(script.ProfileZapValue),
 	ProfileServiceValue = require(script.ProfileServiceValue),
@@ -10,7 +10,30 @@ local Weave = {
 	ProfileServiceObject = require(script.ProfileServiceObject),
 }
 
+-- local WPubTypes = require(script.WPubTypes)
 local WeaveUtils = require(script.WeaveUtils)
+
+-- export type Value<T> = WPubTypes.StateObject<T> & WPubTypes.GetStateObject<T>
+-- export type PlayerValue<T> = WPubTypes.PlayerStateObject<T>
+-- export type ProfileServiceValue<T> = WPubTypes.PlayerStateObject<T>
+
+-- type Weave = {
+-- 	Value: <T>(eventName: string) -> Value<T>,
+-- 	PlayerValue: <T>(eventName: string, initialValue: any) -> PlayerValue<T>,
+-- 	ZapPlayerValue: <T>(eventName: string, zapEventName: string, initialValue: any) -> ZapPlayerValue<T>,
+-- 	ProfileZapValue: <T>(valueName: string, zapEventName: string, profileServiceKey: string) -> PlayerValue<T>,
+-- 	ProfileServiceValue: <T>(eventName: string, profileServiceKey: string) -> PlayerValue<T>,
+-- 	ProfileServerValue: <T>(eventName: string, profileServiceKey: string) -> PlayerValue<T>,
+-- 	ProfileServiceObject: <T>(eventName: string, profileServiceKey: string) -> PlayerValue<T>,
+-- 	RemoteEvent: (Weave: Weave, name: string) -> RemoteEvent | nil,
+-- 	RemoteFunction: (Weave: Weave, name: string) -> RemoteFunction | nil,
+-- 	UnreliableRemoteEvent: (Weave: Weave, name: string) -> UnreliableRemoteEvent | nil,
+-- 	Connect: (Weave: Weave, name: string, handler: (...any) -> ()) -> RBXScriptConnection,
+-- 	ConnectUnreliable: (Weave: Weave, name: string, handler: (...any) -> ()) -> RBXScriptConnection,
+-- 	Handle: (Weave: Weave, name: string, handler: (player: Player, ...any) -> ...any) -> RBXScriptConnection,
+-- 	Invoke: (Weave: Weave, name: string, ...any) -> ...any,
+-- 	Clean: () -> (),
+-- }
 
 --[=[
 Remote Events and functions were inspired by the legend himself Sleitnick
@@ -70,7 +93,6 @@ function Weave:UnreliableRemoteEvent(name: string)
 	return unreliableRemoteEvent
 end
 
-
 --[=[
 	Connects a handler function to the given RemoteEvent.
 
@@ -87,7 +109,6 @@ end
 function Weave:Connect(name: string, handler: (...any) -> ()): RBXScriptConnection
 	return WeaveUtils.Connect(name, handler)
 end
-
 
 --[=[
 	Connects a handler function to the given UnreliableRemoteEvent.
@@ -180,4 +201,4 @@ function Weave:Clean()
 	script:ClearAllChildren()
 end
 
-return Weave
+return Weave :: Weave

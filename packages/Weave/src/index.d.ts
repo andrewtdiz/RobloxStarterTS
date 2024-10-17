@@ -21,32 +21,17 @@ type WeavePlayerValue<T> = PlayerStateObject<T>;
 interface Weave {
 	WeaveValue: <T>(eventName: string, initialValue: T) => WeaveValue<T>;
 	WeavePlayerValue: <T>(eventName: string, initialValue: T) => WeavePlayerValue<T>;
-	ProfileServiceValue: <T>(
-		Weave: Weave,
-		valueName: string,
-		profileServiceKey: string,
-		initialValue: T,
-	) => WeavePlayerValue<T>;
-	ProfileServerValue: <T>(
-		Weave: Weave,
-		valueName: string,
-		profileServiceKey: string,
-		initialValue: T,
-	) => WeavePlayerValue<T>;
-	ProfileServiceObject: <T>(
-		Weave: Weave,
-		valueName: string,
-		profileServiceKey: string,
-		initialValue: T,
-	) => WeavePlayerValue<T>;
-	ProfileZapValue: <T>(
+	ProfileServiceValue<T>(valueName: string, profileServiceKey: string): WeavePlayerValue<T>;
+	ProfileServerValue<T>(valueName: string, profileServiceKey: string): WeavePlayerValue<T>;
+	ProfileServiceObject<T>(valueName: string, profileServiceKey: string): WeavePlayerValue<T>;
+	ProfileZapValue<T>(
 		Weave: Weave,
 		valueName: string,
 		zapEventName: string,
 		profileServiceKey: string,
 		initialValue: T,
-	) => WeavePlayerValue<T>;
-	ZapPlayerValue: <T>(Weave: Weave, valueName: string, zapEventName: string, initialValue: T) => WeavePlayerValue<T>;
+	): WeavePlayerValue<T>;
+	ZapPlayerValue<T>(valueName: string, zapEventName: string, initialValue: T): WeavePlayerValue<T>;
 	RemoteEvent(name: string): RemoteEvent | undefined;
 	RemoteFunction(name: string): RemoteFunction | undefined;
 	UnreliableRemoteEvent(name: string): UnreliableRemoteEvent | undefined;

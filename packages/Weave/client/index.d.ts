@@ -1,8 +1,8 @@
 import { Value } from "@rbxts/fusion";
 
 interface Weave {
-	WeaveValue: <T>(eventName: string) => Value<T>;
-	WeavePlayerValue: <T>(eventName: string) => Value<T>;
+	Value: <T>(eventName: string) => Value<T>;
+	PlayerValue: <T>(eventName: string) => Value<T>;
 	ProfileServiceValue: <T>(valueName: string) => Value<T>;
 	ProfileServerValue: <T>(valueName: string) => Value<T>;
 	ProfileServiceObject: <T>(valueName: string) => Value<T>;

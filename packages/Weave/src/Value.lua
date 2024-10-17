@@ -1,7 +1,7 @@
-local WeaveValue = {}
+local Value = {}
 local RunService = game:GetService("RunService")
 
-local CLASS_METATABLE = { __index = WeaveValue }
+local CLASS_METATABLE = { __index = Value }
 local WEAK_KEYS_METATABLE = { __mode = "k" }
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local Fusion =
@@ -17,25 +17,25 @@ local Trove = TS.import(
 	"out"
 ).Trove
 
-local Value = Fusion.Value
+local FusionValue = Fusion.Value
 
-function WeaveValue:getNow()
+function Value:getNow()
 	return self._value
 end
 
-function WeaveValue:get()
+function Value:get()
 	return self._fusionValue:get()
 end
 
-function WeaveValue:getValue()
+function Value:getValue()
 	return self._fusionValue
 end
 
-function WeaveValue:Fusion()
+function Value:Fusion()
 	return self._fusionValue
 end
 
-function WeaveValue:set(newValue: any, force: boolean?)
+function Value:set(newValue: any, force: boolean?)
 	assert(
 		typeof(newValue) == typeof(self._fusionValue:get()),
 		`Expected type {typeof(self._fusionValue:get())}, got {newValue} of type {typeof(newValue)}`
@@ -48,7 +48,7 @@ function WeaveValue:set(newValue: any, force: boolean?)
 	end
 end
 
-function WeaveValue:update(func: (t: any) -> nil, force: boolean)
+function Value:update(func: (t: any) -> nil, force: boolean)
 	if RunService:IsClient() then
 		error("Cannot set WeavePlayerValue value on the client. Only the Server")
 		return
@@ -63,7 +63,7 @@ function WeaveValue:update(func: (t: any) -> nil, force: boolean)
 	end
 end
 
-function WeaveValue:UpdateGameWorkspace(parentInstance: Instance, valueObject)
+function Value:UpdateGameWorkspace(parentInstance: Instance, valueObject)
 	if typeof(valueObject) ~= "table" then
 		if not WeaveUtils.IsCorrectInstanceType(valueObject, parentInstance) then
 			error(`Setting incorrect value for instance type. {parentInstance}, {valueObject}`)
@@ -116,7 +116,7 @@ function WeaveValue:UpdateGameWorkspace(parentInstance: Instance, valueObject)
 	end
 end
 
-function WeaveValue:_Reload()
+function Value:_Reload()
 	if RunService:IsServer() then
 		return
 	end
@@ -124,7 +124,7 @@ function WeaveValue:_Reload()
 	self:set(WeaveUtils.GetValueFromInstance(self._parentInstance))
 end
 
-function WeaveValue:_AttachListenersToInstance(instance: Instance)
+function Value:_AttachListenersToInstance(instance: Instance)
 	if RunService:IsServer() then
 		return
 	end
@@ -158,11 +158,11 @@ function WeaveValue:_AttachListenersToInstance(instance: Instance)
 	return nil
 end
 
-function WeaveValue:_SetUpValue()
+function Value:_SetUpValue()
 	if RunService:IsServer() then
 		local newInstance = WeaveUtils.GetNewInstance(self._name, self._fusionValue:get())
 		if newInstance == nil then
-			error("Unsupported data type for WeaveValue")
+			error("Unsupported data type for Value")
 		end
 		self._parentInstance = newInstance
 	else
@@ -174,12 +174,12 @@ function WeaveValue:_SetUpValue()
 		end
 
 		self._value = WeaveUtils.GetValueFromInstance(self._parentInstance)
-		self._fusionValue = Value(self._value)
+		self._fusionValue = FusionValue(self._value)
 		self:_AttachListenersToInstance(self._parentInstance)
 	end
 end
 
-function WeaveValue<T>(initialName: string, initialValue: T?)
+function Value<T>(initialName: string, initialValue: T?)
 	if initialValue == nil then
 		initialValue = {}
 	end
@@ -191,7 +191,7 @@ function WeaveValue<T>(initialName: string, initialValue: T?)
 		dependentSet = setmetatable({}, WEAK_KEYS_METATABLE),
 		_name = initialName,
 		_value = initialValue,
-		_fusionValue = Value(initialValue),
+		_fusionValue = FusionValue(initialValue),
 		_troves = {},
 	}, CLASS_METATABLE)
 
@@ -203,4 +203,4 @@ function WeaveValue<T>(initialName: string, initialValue: T?)
 	return self
 end
 
-return WeaveValue
+return Value

@@ -1,8 +1,10 @@
+local ServerScriptService = game:GetService("ServerScriptService")
+
 local PlayerDataHandler = {}
 
-local Profile = require(script.Parent.ProfileTemplate)
+local Profile = require(ServerScriptService.ProfileServiceReqs.Profile)
 
-local ProfileService = require(script.Parent.ProfileService)
+local ProfileStore = require(ServerScriptService.ProfileServiceReqs.ProfileStore)
 local Players = game:GetService("Players")
 local PROD_PLAYERPROFILE = "PROD-PlayerProfile"
 local BETA_PLAYERPROFILE = "PlayerProfile"
@@ -10,49 +12,58 @@ local BETA_PLAYERPROFILE = "PlayerProfile"
 local RunService = game:GetService("RunService")
 local isProd = not RunService:IsStudio()
 
-local ProfileStore = ProfileService.GetProfileStore(if isProd then PROD_PLAYERPROFILE else BETA_PLAYERPROFILE, Profile)
+local PlayerStore = ProfileStore.New(if isProd then PROD_PLAYERPROFILE else BETA_PLAYERPROFILE, Profile)
 
 local WAIT_DURATION = 10000
 
 local Profiles = {}
 
-local function playerAdded(player: Player)
+local function PlayerAdded(player: Player)
 	local profile
-	if script:GetAttribute("mock") and RunService:IsStudio() then
-		profile = ProfileStore.Mock:LoadProfileAsync(`Player_{player.UserId}`)
-	else
-		profile = ProfileStore:LoadProfileAsync(`Player_{player.UserId}`)
+	if RunService:IsStudio() then
+		PlayerStore = PlayerStore.Mock
+	end
+	while player.Parent == Players and ProfileStore.IsClosing == false do
+		profile = PlayerStore:StartSessionAsync(`{player.UserId}`, {
+			Cancel = function()
+				return player.Parent ~= Players
+			end,
+		})
+		if profile ~= nil then
+			break
+		end
 	end
 
 	if profile ~= nil then
 		profile:AddUserId(player.UserId)
 		profile:Reconcile()
 
-		profile:ListenToRelease(function()
+		profile.OnSessionEnd:Connect(function()
 			Profiles[player] = nil
-
-			player:Kick()
+			player:Kick(`Profile session end - Please rejoin`)
 		end)
 
-		if not player:IsDescendantOf(Players) then
-			profile:Release()
-		else
+		if player.Parent == Players then
 			Profiles[player] = profile
+		else
+			profile:EndSession()
 		end
 	else
-		player:Kick()
+		player:Kick(`Profile load fail - Please rejoin`)
 	end
 end
 
 function PlayerDataHandler:Init()
 	for _, player in Players:GetPlayers() do
-		task.spawn(playerAdded, player)
+		task.spawn(PlayerAdded, player)
 	end
 
-	Players.PlayerAdded:Connect(playerAdded)
+	Players.PlayerAdded:Connect(PlayerAdded)
+
 	Players.PlayerRemoving:Connect(function(player)
-		if Profiles[player] then
-			Profiles[player]:Release()
+		local profile = Profiles[player]
+		if profile ~= nil then
+			profile:EndSession()
 		end
 	end)
 end
@@ -69,30 +80,6 @@ function PlayerDataHandler:GetAsync(player: Player, key: string)
 	return self:_GetAsync(player, key)
 end
 
-function PlayerDataHandler:_GetProfile(player: Player)
-	local now = DateTime.now().UnixTimestampMillis
-	while DateTime.now().UnixTimestampMillis - now < WAIT_DURATION do
-		if getProfile(player) ~= nil then
-			break
-		end
-		task.wait()
-	end
-	local profile = getProfile(player)
-	return profile.Data
-end
-
-function PlayerDataHandler:_ClearProfile(player: Player)
-	local now = DateTime.now().UnixTimestampMillis
-	while DateTime.now().UnixTimestampMillis - now < WAIT_DURATION do
-		if getProfile(player) ~= nil then
-			break
-		end
-		task.wait()
-	end
-	local profile = getProfile(player)
-	profile.Data = self:GetProfileTemplate()
-end
-
 function PlayerDataHandler:_GetAsync(player: Player, key: string)
 	local now = DateTime.now().UnixTimestampMillis
 	while DateTime.now().UnixTimestampMillis - now < WAIT_DURATION do
@@ -103,20 +90,20 @@ function PlayerDataHandler:_GetAsync(player: Player, key: string)
 	end
 
 	local profile = getProfile(player)
+	assert(profile.Data[key] ~= nil, `Data does not exist for key {key}`)
 
-	assert(profile.Data[key], `Data does not exist for key {key}`)
-	warn(profile.Data[key], key)
 	return profile.Data[key]
 end
 
 function PlayerDataHandler:Set(player: Player, key: string, value: any)
 	local profile = getProfile(player)
-	assert(profile.Data[key], `Data does not exist for key {key}`)
+	assert(profile.Data[key] ~= nil, `Data does not exist for key {key}`)
 
 	assert(
 		type(profile.Data[key]) == type(value),
 		`Value {value} of type {type(value)} is not of expected type {type(profile.Data[key])}`
 	)
+
 	profile.Data[key] = value
 end
 
